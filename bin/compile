@@ -121,6 +121,23 @@ then
   ccache -z 2>&1 | indent
 fi
 
+if [ -d "$build_dir"/.git ]
+then
+  cd $build_dir >/dev/null 2>&1
+  remote_origin_url=$(git config --list | awk -F= '$1 == "remote.origin.url" {print $2}')
+  case "$remote_origin_url" in
+    *://anonscm.debian.org/pkg-kde/*.git|*://anonscm.debian.org/*/pkg-kde/*.git)
+      project=$(basename $remote_origin_url .git)
+      upstream_url=http://anongit.kde.org/$project
+      upstream_dir=$build_dir/.upstream
+      git clone $upstream_url $upstream_dir
+      tar -C $upstream_dir -cf $cache_dir/upstream.tar .
+      tar -C $sub_dir -xf $cache_dir/upstream.tar
+      ;;
+  esac
+  cd - >/dev/null 2>&1
+fi
+
 echo "-----> Building package"
 cd $sub_dir >/dev/null 2>&1
 dpkg-buildpackage -j$num_cpu -rfakeroot -b 2>&1 | indent
